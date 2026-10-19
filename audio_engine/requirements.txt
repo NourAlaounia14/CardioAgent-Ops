@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+librosa
+soundfile
+scipy
+scikit-learn
+pandas
+numpy
+joblib
+onnxruntime
