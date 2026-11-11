@@ -1,0 +1,17 @@
+{
+  "algo": "cnn_custom",
+  "input_kind": "xmel",
+  "input_name": "xmel",
+  "output_name": "probabilities",
+  "positive_class": 1,
+  "threshold": 0.5,
+  "input_shape": [
+    null,
+    1,
+    64,
+    313
+  ],
+  "val_recall": 0.895609756097561,
+  "test_recall": 0.8683446272991288,
+  "mlflow_run_id": "2c2d8298354540c396514bd3279ae62e"
+}
