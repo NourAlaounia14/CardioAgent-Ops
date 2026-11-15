@@ -1,0 +1,9 @@
+pypdf
+qdrant-client
+sentence-transformers
+numpy
+pandas
+mlflow
+fastapi
+uvicorn[standard]
+python-dotenv

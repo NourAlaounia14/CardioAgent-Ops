@@ -90,18 +90,19 @@ def build_inventory(root: str | Path) -> pd.DataFrame:
     return df
 
 
-# ------------------------------------------- 2-6. signal : chargement -> segments
+# ------------------------------------------- 2-6. signal : chargement -> segments 
+#reechentillage a 2000hz avec librosa 
 def load_signal(source) -> np.ndarray:
     """Charge en mono et rééchantillonne à SR (chemin ou objet fichier)."""
     y, _ = librosa.load(source, sr=SR, mono=True)
     return y
 
-
+#filtrage bande passante (25-400hz) avec un filtre butterworth d'ordre 4
 def bandpass(y: np.ndarray, band=BAND, order=4) -> np.ndarray:
     sos = butter(order, band, btype="bandpass", fs=SR, output="sos")
     return sosfiltfilt(sos, y).astype(np.float32)
 
-
+#normalisation du signal audio pour que l'amplitude maximale soit 1
 def normalize(y: np.ndarray) -> np.ndarray:
     """Normalisation d'amplitude (pic = 1) : on ignore le volume d'enregistrement."""
     return (y / (np.max(np.abs(y)) + 1e-8)).astype(np.float32)
@@ -117,12 +118,13 @@ def segment(y: np.ndarray) -> np.ndarray:
         starts.append(len(y) - SEG_LEN)
     return np.stack([y[s : s + SEG_LEN] for s in starts])
 
-
+#workflow complet : chargement, filtrage, normalisation, segmentation
 def signal_to_segments(source) -> np.ndarray:
     return segment(normalize(bandpass(load_signal(source))))
 
 
 # --------------------------------------------------------------- 7. features
+#transfomer les segments en vecteurs de features pour l'entraînement des modèles decision tree et svm
 def features_1d(seg: np.ndarray) -> np.ndarray:
     """Vecteur 1D (42 valeurs) pour Decision Tree et SVM."""
     mfcc = librosa.feature.mfcc(

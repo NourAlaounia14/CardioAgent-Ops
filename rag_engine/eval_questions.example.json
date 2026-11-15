@@ -1,0 +1,18 @@
+[
+  {
+    "question": "Quand une échocardiographie est-elle recommandée devant un souffle systolique ?",
+    "expected_keywords": ["echocardiograph", "murmur"],
+    "match": "all"
+  },
+  {
+    "question": "Quels sont les critères de gravité d'une sténose aortique ?",
+    "expected_keywords": ["aortic stenosis", "gradient"],
+    "match": "all"
+  },
+  {
+    "question": "Un souffle diastolique peut-il être bénin ?",
+    "expected_keywords": ["diastolic murmur"],
+    "match": "any",
+    "expected_source": "nom_du_pdf.pdf"
+  }
+]
