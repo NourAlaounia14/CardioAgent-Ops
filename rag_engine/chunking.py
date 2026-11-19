@@ -291,7 +291,5 @@ def main():
             if shown[c["doc_id"]] < a.preview:
                 shown[c["doc_id"]] += 1
                 print(f"\n--- [{c['doc_id']} #{c['chunk_index']}] p.{c['page']} | {c['section']}\n{c['text']}")
-
-
 if __name__ == "__main__":
     main()

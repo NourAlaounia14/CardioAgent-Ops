@@ -2,6 +2,9 @@
 
 Lancement local :
     uvicorn audio_engine.main:app --host 0.0.0.0 --port 8000
+Lancement Docker (depuis la racine du projet) :
+    docker compose up -d --build audio-engine
+Documentation interactive : http://localhost:8000/docs
 Appelé par l'AudioAgent : POST http://audio-engine:8000/predict (champ "file").
 """
 import os

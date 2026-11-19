@@ -1,0 +1,22 @@
+services:
+  vector-db:
+    image: qdrant/qdrant:latest
+    container_name: vector-db
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  audio-engine:
+    build:
+      context: .
+      dockerfile: audio_engine/Dockerfile
+    image: cardioagent-audio-engine:local
+    container_name: audio-engine
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
