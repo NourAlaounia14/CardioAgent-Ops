@@ -16,7 +16,19 @@ services:
     container_name: audio-engine
     ports:
       - "127.0.0.1:8000:8000"
+    volumes:
+      - ./audio_engine:/app/audio_engine
     restart: unless-stopped
-
+  rag-engine:
+    build:
+      context: .
+      dockerfile: rag_engine/Dockerfile
+    image: cardioagent-rag-engine:local
+    container_name: rag-engine
+    ports:
+      - "127.0.0.1:8001:8001"
+    env_file:
+      - .env
+    restart: unless-stopped
 volumes:
   qdrant_data:

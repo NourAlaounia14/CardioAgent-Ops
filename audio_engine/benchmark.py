@@ -413,11 +413,11 @@ def build_svm(ctx):
                            n_params=int(svc.support_vectors_.size))
 
 
-def _torch_result(model, ctx, params, lr, freeze_epochs=0):
+def _torch_result(model, ctx, params, lr, history_name, freeze_epochs=0):
     if ctx.device.type == "cuda":
         torch.cuda.reset_peak_memory_stats()
     n_params = sum(p.numel() for p in model.parameters())
-    fit_torch(model, ctx, lr, freeze_epochs)
+    ctx.histories[history_name] = fit_torch(model, ctx, lr, freeze_epochs)
     if ctx.device.type == "cuda":
         mlflow.log_metric("peak_vram_mb", torch.cuda.max_memory_allocated() / 1e6)
     params.update(lr=lr, batch_size=ctx.args.batch_size, epochs_max=ctx.args.epochs,
@@ -430,20 +430,23 @@ def _torch_result(model, ctx, params, lr, freeze_epochs=0):
 
 def build_cnn(ctx):
     model = CustomCNN(ctx.mel_mean, ctx.mel_std)
-    return _torch_result(model, ctx, dict(arch="CNN 4 blocs conv 16-32-64-128"), ctx.args.lr)
+    return _torch_result(model, ctx, dict(arch="CNN 4 blocs conv 16-32-64-128"),
+                         ctx.args.lr, history_name="cnn_custom")
 
 
 def build_resnet(ctx):
     model = ResNetTL(ctx.mel_mean, ctx.mel_std, ctx.args.resnet_depth, not ctx.args.no_pretrained)
     params = dict(arch=f"ResNet{ctx.args.resnet_depth}", pretrained=model.pretrained_loaded,
                   freeze_epochs=ctx.args.freeze_epochs)
-    return _torch_result(model, ctx, params, ctx.args.lr, freeze_epochs=ctx.args.freeze_epochs)
+    return _torch_result(model, ctx, params, ctx.args.lr, history_name="resnet_transfer",
+                         freeze_epochs=ctx.args.freeze_epochs)
 
 
 def build_transformer(ctx):
     model = TransformerCNN(ctx.mel_mean, ctx.mel_std)
     params = dict(arch="CNN stem + TransformerEncoder (3 couches, 4 têtes, d=128)")
-    return _torch_result(model, ctx, params, ctx.args.lr * 0.5)
+    return _torch_result(model, ctx, params, ctx.args.lr * 0.5,
+                         history_name="transformer_cnn")
 
 
 BUILDERS = {
@@ -632,7 +635,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     ctx = load_data(args.data_dir)
-    ctx.args, ctx.seed, ctx.fitted = args, args.seed, {}
+    ctx.args, ctx.seed, ctx.fitted, ctx.histories = args, args.seed, {}, {}
     ctx.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     mlflow.set_tracking_uri(args.tracking_uri)
@@ -664,6 +667,8 @@ def main():
         df = pd.DataFrame(ranked)
         df.to_csv(out_dir / "benchmark_results.csv", index=False)
         mlflow.log_artifact(str(out_dir / "benchmark_results.csv"))
+        (out_dir / "histories.json").write_text(json.dumps(ctx.histories, indent=2))
+        mlflow.log_artifact(str(out_dir / "histories.json"))
         cols = ["model", "val_recall", "val_specificity", "val_f1", "val_auc",
                 "test_recall", "test_specificity", "test_f1", "test_auc", "train_time_s"]
         print("\n" + df[cols].round(3).to_string(index=False))

@@ -163,26 +163,37 @@ def plot_confusions(y: np.ndarray, proba: dict, out: Path, best: str | None) -> 
 
 
 # ------------------------------------------------------- à partir des historiques
-def plot_training(histories: dict, out: Path, best: str | None) -> Path | None:
+def plot_training(histories: dict, out: Path, best: str | None) -> list[Path]:
     hist = {m: pd.DataFrame(h) for m, h in histories.items() if h}
     if not hist:
-        return None
-    fig, axes = plt.subplots(1, 3, figsize=(14, 3.8))
+        return []
+    paths = []
     for m, h in hist.items():
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
         c, lab = _col(m), _lab(m, best)
         axes[0].plot(h["epoch"], h["train_loss"], color=c, label=f"{lab} (train)")
-        axes[0].plot(h["epoch"], h["val_loss"], color=c, ls="--")
-        axes[1].plot(h["epoch"], h["val_recall"], color=c, label=lab)
-        axes[2].plot(h["epoch"], h["val_auc"], color=c, label=lab)
-    axes[0].set_title("Perte (trait plein = train, pointillés = val)", fontsize=10)
-    axes[1].set_title("Recall de validation", fontsize=10)
-    axes[2].set_title("AUC de validation", fontsize=10)
-    for ax in axes:
-        ax.set_xlabel("Époque")
-        ax.grid(alpha=0.3)
-    axes[0].legend(fontsize=8)
-    fig.tight_layout()
-    return _save(fig, out, "6_training_curves.png")
+        axes[0].plot(h["epoch"], h["val_loss"], color="#ff7f0e", ls="--",
+                     label="Validation")
+        axes[0].set_title("Perte : entraînement vs validation", fontsize=10)
+        axes[0].set_ylabel("Cross-entropy")
+        axes[1].plot(h["epoch"], h["val_recall"], color="#2ca02c", label="Recall validation")
+        axes[1].plot(h["epoch"], h["val_auc"], color="#9467bd", label="AUC validation")
+        axes[1].set_title("Métriques sur la validation", fontsize=10)
+        axes[1].set_ylim(0, 1.05)
+        for ax in axes:
+            ax.set_xlabel("Époque")
+            ax.grid(alpha=0.3)
+            ax.legend(fontsize=8)
+        fig.suptitle(f"Courbes d'apprentissage — {lab}")
+        fig.text(
+            0.5, 0.01,
+            "Surapprentissage possible : perte train en baisse et perte val qui remonte/s'écarte. "
+            "Sous-apprentissage possible : pertes encore élevées et métriques faibles.",
+            ha="center", fontsize=8,
+        )
+        fig.tight_layout(rect=(0, 0.08, 1, 0.94))
+        paths.append(_save(fig, out, f"6_training_curves_{m}.png"))
+    return paths
 
 
 # ---------------------------------------------------------------------- tout
@@ -198,9 +209,7 @@ def make_all(out_dir, df: pd.DataFrame, preds: dict | None = None,
             paths += [plot_roc(y, proba, out, best), plot_pr(y, proba, out, best),
                       plot_confusions(y, proba, out, best)]
     if histories:
-        p = plot_training(histories, out, best)
-        if p:
-            paths.append(p)
+        paths.extend(plot_training(histories, out, best))
     return sorted(paths)
 
 
@@ -224,6 +233,9 @@ def main():
     if preds is None:
         print("predictions.npz absent : ROC, PR et matrices de confusion ignorées "
               "(relance benchmark.py pour les générer).")
+    if histories is None:
+        print("histories.json absent : courbes d'apprentissage ignorées "
+              "(relance benchmark.py pour entraîner les modèles et les générer).")
     for p in paths:
         print(p)
 

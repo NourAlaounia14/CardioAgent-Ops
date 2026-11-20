@@ -6,4 +6,3 @@
 data/raw/
 data/processed/*
 !data/processed/scaler.joblib
-rag_engine/
